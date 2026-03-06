@@ -44,6 +44,20 @@ const TIPS = [
   "Tip: Research shows procrastinators are creative. You're basically Picasso.",
 ]
 
+const RANKS = [
+  { minWasted: 0, title: 'Innocent bystander', emoji: '😇' },
+  { minWasted: 15, title: 'Casual delayer', emoji: '😏' },
+  { minWasted: 30, title: 'Part-time avoider', emoji: '🙃' },
+  { minWasted: 60, title: 'Dedicated procrastinator', emoji: '😎' },
+  { minWasted: 120, title: 'Expert time-waster', emoji: '🔥' },
+  { minWasted: 300, title: 'Legend of the void', emoji: '👑' },
+  { minWasted: 600, title: 'Transcendent procrastinator', emoji: '🌀' },
+]
+
+const CONFETTI_COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#a855f7', '#ec4899']
+const CONFETTI_COUNT = 40
+const RUN_BUTTON_AFTER_CLICKS = 15
+
 const STORAGE_KEYS = {
   totalWasted: 'procrastination_total_wasted_minutes',
   lifetimeStreak: 'procrastination_lifetime_streak',
@@ -72,9 +86,21 @@ export default function ProcrastinationButton() {
   const [currentStreak, setCurrentStreak] = useState(0)
   const [shake, setShake] = useState(false)
   const [showAchievements, setShowAchievements] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   const tipIndex = useRef(0)
+  const confettiKey = useRef(0)
+  const confettiParticles = useRef([])
 
   const totalClicks = totalWasted / BASE_MINUTES
+  const currentRank = useMemo(() => {
+    let r = RANKS[0]
+    for (const rank of RANKS) {
+      if (totalWasted >= rank.minWasted) r = rank
+    }
+    return r
+  }, [totalWasted])
+  const buttonRunsAway = totalClicks >= RUN_BUTTON_AFTER_CLICKS
   const unlocked = useMemo(() => {
     const set = new Set()
     for (const a of ACHIEVEMENTS) {
@@ -99,12 +125,35 @@ export default function ProcrastinationButton() {
 
   function handleClick() {
     setMinutes((m) => m + BASE_MINUTES)
-    const milestoneMsg = MILESTONE_MESSAGES[currentStreak + 1]
+    const nextStreak = currentStreak + 1
+    const milestoneMsg = MILESTONE_MESSAGES[nextStreak]
     setMessage(milestoneMsg || MESSAGES[Math.floor(Math.random() * MESSAGES.length)])
     setTotalWasted((w) => w + BASE_MINUTES)
     setCurrentStreak((s) => s + 1)
     setShake(true)
     setTimeout(() => setShake(false), 500)
+    if (milestoneMsg) {
+      confettiKey.current += 1
+      confettiParticles.current = Array.from({ length: CONFETTI_COUNT }, () => ({
+        left: Math.random() * 100,
+        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        delay: Math.random() * 0.5,
+      }))
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 2600)
+    }
+  }
+
+  async function handleShare() {
+    const hours = Math.floor(totalWasted / 60)
+    const mins = totalWasted % 60
+    const timeStr = hours > 0 ? `${hours}h ${mins}m` : `${totalWasted}m`
+    const text = `I've wasted ${timeStr} on the Procrastination Button. ${currentRank.emoji} Rank: ${currentRank.title}. No regrets. (Okay, some regrets.)`
+    try {
+      await navigator.clipboard.writeText(text)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+    } catch (_) {}
   }
 
   const [tip, setTip] = useState(TIPS[0])
@@ -133,15 +182,38 @@ export default function ProcrastinationButton() {
       </div>
 
       <h1 className="text-2xl font-bold text-slate-300 mb-2">Procrastination Button</h1>
-      <p className="text-slate-500 text-sm mb-8">Click. Regret. Repeat.</p>
+      <p className="text-slate-500 text-sm mb-1">Click. Regret. Repeat.</p>
+      <p className="text-slate-500 text-sm mb-6">
+        <span className="text-amber-400/90">{currentRank.emoji}</span> {currentRank.title}
+      </p>
+
+      {showConfetti && confettiParticles.current.length > 0 && (
+        <div className="fixed inset-0 pointer-events-none z-20 overflow-hidden">
+          {confettiParticles.current.map((p, i) => (
+            <div
+              key={`${confettiKey.current}-${i}`}
+              className="absolute w-2 h-2 rounded-sm animate-confetti"
+              style={{
+                left: `${p.left}%`,
+                bottom: '-10px',
+                backgroundColor: p.color,
+                animationDelay: `${p.delay}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       <button
         type="button"
         onClick={handleClick}
-        className="w-72 h-72 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 transition-all duration-150 shadow-2xl shadow-red-900/50 border-4 border-red-400/30 text-white font-bold text-xl px-4 py-2 select-none cursor-pointer hover:scale-105"
+        className={`w-72 h-72 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 transition-all duration-150 shadow-2xl shadow-red-900/50 border-4 border-red-400/30 text-white font-bold text-xl px-4 py-2 select-none cursor-pointer hover:scale-105 ${buttonRunsAway ? 'animate-float' : ''}`}
       >
         I'll start in {minutes} minutes
       </button>
+      {buttonRunsAway && (
+        <p className="mt-2 text-slate-500 text-xs">Even the button is trying to get away.</p>
+      )}
 
       {message && (
         <p className="mt-8 max-w-md text-lg text-amber-200 font-medium animate-pulse">
@@ -159,6 +231,14 @@ export default function ProcrastinationButton() {
           <span className="text-2xl font-mono text-slate-300">{lifetimeStreak}</span>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={handleShare}
+        className="mt-6 px-4 py-2 rounded-lg bg-slate-700/80 hover:bg-slate-600 text-slate-400 hover:text-slate-300 text-sm transition-colors border border-slate-600"
+      >
+        {shareCopied ? '✓ Copied to clipboard!' : '📤 Share my shame'}
+      </button>
 
       {showAchievements && (
         <div className="absolute inset-0 bg-slate-900/95 flex items-center justify-center p-6 z-10">
