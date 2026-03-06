@@ -89,6 +89,7 @@ export default function ProcrastinationButton() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
   const [countdown, setCountdown] = useState(null) // 3 | 2 | 1 | 'psych'
+  const [discoMode, setDiscoMode] = useState(false)
   const tipIndex = useRef(0)
   const confettiKey = useRef(0)
   const confettiParticles = useRef([])
@@ -183,8 +184,25 @@ export default function ProcrastinationButton() {
   const wastedDisplay = hours > 0 ? `${hours}h ${mins}m` : `${totalWasted}m`
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex flex-col items-center justify-center p-6 text-center ${shake ? 'animate-shake' : ''}`}>
-      <div className="absolute top-4 right-4">
+    <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-center relative overflow-hidden ${shake ? 'animate-shake' : ''} ${discoMode ? '' : 'bg-gradient-to-b from-slate-900 to-slate-800'}`}>
+      {discoMode && (
+        <div
+          className="absolute inset-0 bg-disco animate-disco-bg pointer-events-none z-0"
+          style={{
+            backgroundImage: 'linear-gradient(124deg, #ff2400, #e81d1d, #e8b71d, #e3e81d, #1de840, #1ddde8, #2b1de8, #dd00f3, #ff2400)',
+          }}
+        />
+      )}
+      <div className="relative z-10 flex flex-col items-center justify-center text-center w-full">
+      <div className="absolute top-4 right-4 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setDiscoMode((d) => !d)}
+          className={`text-sm transition-all px-2 py-1 rounded ${discoMode ? 'bg-amber-500/30 text-amber-300' : 'text-slate-500 hover:text-amber-400'}`}
+          title={discoMode ? 'Disco mode on' : 'Disco mode off'}
+        >
+          🪩 Disco
+        </button>
         <button
           type="button"
           onClick={() => setShowAchievements((s) => !s)}
@@ -220,7 +238,7 @@ export default function ProcrastinationButton() {
       <button
         type="button"
         onClick={handleClick}
-        className={`w-72 h-72 rounded-full bg-red-600 hover:bg-red-500 active:scale-95 transition-all duration-150 shadow-2xl shadow-red-900/50 border-4 border-red-400/30 text-white font-bold text-xl px-4 py-2 select-none cursor-pointer hover:scale-105 ${buttonRunsAway ? 'animate-float' : ''}`}
+        className={`w-72 h-72 rounded-full active:scale-95 transition-all duration-150 border-4 text-white font-bold text-xl px-4 py-2 select-none cursor-pointer hover:scale-105 ${buttonRunsAway ? 'animate-float' : ''} ${discoMode ? 'bg-gradient-to-r from-fuchsia-500 via-yellow-400 to-cyan-400 border-white/50 animate-disco-glow hover:opacity-95' : 'bg-red-600 hover:bg-red-500 shadow-2xl shadow-red-900/50 border-red-400/30'}`}
       >
         I'll start in {minutes} minutes
       </button>
@@ -302,6 +320,7 @@ export default function ProcrastinationButton() {
       <p className="absolute bottom-6 left-4 right-4 text-slate-500 text-xs max-w-md mx-auto transition-opacity duration-500">
         {tip}
       </p>
+      </div>
     </div>
   )
 }

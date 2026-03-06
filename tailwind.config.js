@@ -17,10 +17,24 @@ export default {
           '50%': { transform: 'translate(-6px, 4px)' },
           '75%': { transform: 'translate(4px, 8px)' },
         },
+        'disco-bg': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'disco-glow': {
+          '0%, 100%': { boxShadow: '0 0 30px #ff0080, 0 0 60px #ff0080' },
+          '33%': { boxShadow: '0 0 30px #00ff88, 0 0 60px #00ff88' },
+          '66%': { boxShadow: '0 0 30px #0088ff, 0 0 60px #0088ff' },
+        },
       },
       animation: {
         confetti: 'confetti 2.5s ease-out forwards',
         float: 'float 3s ease-in-out infinite',
+        'disco-bg': 'disco-bg 5s ease infinite',
+        'disco-glow': 'disco-glow 1.5s ease-in-out infinite',
+      },
+      backgroundSize: {
+        'disco': '200% 200%',
       },
     },
   },
