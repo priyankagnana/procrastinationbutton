@@ -88,6 +88,7 @@ export default function ProcrastinationButton() {
   const [showAchievements, setShowAchievements] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [shareCopied, setShareCopied] = useState(false)
+  const [countdown, setCountdown] = useState(null) // 3 | 2 | 1 | 'psych'
   const tipIndex = useRef(0)
   const confettiKey = useRef(0)
   const confettiParticles = useRef([])
@@ -143,6 +144,18 @@ export default function ProcrastinationButton() {
       setTimeout(() => setShowConfetti(false), 2600)
     }
   }
+
+  function handleActuallyStart() {
+    setCountdown(3)
+  }
+
+  useEffect(() => {
+    if (countdown === null) return
+    const delay = countdown === 'psych' ? 1500 : 1000
+    const next = countdown === 3 ? 2 : countdown === 2 ? 1 : countdown === 1 ? 'psych' : null
+    const t = setTimeout(() => setCountdown(next), delay)
+    return () => clearTimeout(t)
+  }, [countdown])
 
   async function handleShare() {
     const hours = Math.floor(totalWasted / 60)
@@ -213,6 +226,26 @@ export default function ProcrastinationButton() {
       </button>
       {buttonRunsAway && (
         <p className="mt-2 text-slate-500 text-xs">Even the button is trying to get away.</p>
+      )}
+
+      <button
+        type="button"
+        onClick={handleActuallyStart}
+        disabled={countdown !== null}
+        className="mt-4 px-5 py-2 rounded-full bg-emerald-700/60 hover:bg-emerald-600/80 disabled:opacity-50 disabled:cursor-not-allowed text-emerald-200 text-sm font-medium border border-emerald-500/40 transition-colors"
+      >
+        I'll do it now
+      </button>
+
+      {countdown !== null && (
+        <div className="fixed inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-30">
+          <p className="text-8xl font-black text-slate-100 tabular-nums animate-pulse">
+            {countdown === 'psych' ? '😏' : countdown}
+          </p>
+          <p className="mt-4 text-xl text-amber-300 font-medium">
+            {countdown === 'psych' ? "Just kidding. Have another 5 minutes." : 'Starting in...'}
+          </p>
+        </div>
       )}
 
       {message && (
