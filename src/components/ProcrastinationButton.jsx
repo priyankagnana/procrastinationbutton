@@ -61,11 +61,34 @@ const RUN_BUTTON_AFTER_CLICKS = 15
 const STORAGE_KEYS = {
   totalWasted: 'procrastination_total_wasted_minutes',
   lifetimeStreak: 'procrastination_lifetime_streak',
+  soundMuted: 'procrastination_sound_muted',
+}
+
+const PRODUCTIVITY_START = 100
+const PRODUCTIVITY_DROP_PER_CLICK = 4
+const TALK_BACK_EVERY = 7
+const NOTIFICATION_EVERY = 15
+
+function playClickSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 280
+    osc.type = 'sine'
+    gain.gain.setValueAtTime(0.08, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.08)
+  } catch (_) {}
 }
 
 function load(key, fallback) {
   try {
     const v = localStorage.getItem(key)
+    if (key === STORAGE_KEYS.soundMuted) return v == null ? fallback : v === 'true'
     return v != null ? Number(v) : fallback
   } catch {
     return fallback
@@ -77,6 +100,7 @@ function save(key, value) {
     localStorage.setItem(key, String(value))
   } catch (_) {}
 }
+
 
 export default function ProcrastinationButton() {
   const [minutes, setMinutes] = useState(BASE_MINUTES)
@@ -90,6 +114,9 @@ export default function ProcrastinationButton() {
   const [shareCopied, setShareCopied] = useState(false)
   const [countdown, setCountdown] = useState(null) // 3 | 2 | 1 | 'psych'
   const [discoMode, setDiscoMode] = useState(false)
+  const [soundMuted, setSoundMuted] = useState(() => load(STORAGE_KEYS.soundMuted, false))
+  const [buttonTalkBack, setButtonTalkBack] = useState(null)
+  const [showNotification, setShowNotification] = useState(false)
   const tipIndex = useRef(0)
   const confettiKey = useRef(0)
   const confettiParticles = useRef([])
@@ -126,6 +153,7 @@ export default function ProcrastinationButton() {
   }, [currentStreak, lifetimeStreak])
 
   function handleClick() {
+    if (!soundMuted) playClickSound()
     setMinutes((m) => m + BASE_MINUTES)
     const nextStreak = currentStreak + 1
     const milestoneMsg = MILESTONE_MESSAGES[nextStreak]
@@ -134,6 +162,11 @@ export default function ProcrastinationButton() {
     setCurrentStreak((s) => s + 1)
     setShake(true)
     setTimeout(() => setShake(false), 500)
+    if (nextStreak > 0 && nextStreak % TALK_BACK_EVERY === 0) {
+      setButtonTalkBack("Please. Stop.")
+      setTimeout(() => setButtonTalkBack(null), 2000)
+    }
+    if (nextStreak > 0 && nextStreak % NOTIFICATION_EVERY === 0) setShowNotification(true)
     if (milestoneMsg) {
       confettiKey.current += 1
       confettiParticles.current = Array.from({ length: CONFETTI_COUNT }, () => ({
@@ -157,6 +190,14 @@ export default function ProcrastinationButton() {
     const t = setTimeout(() => setCountdown(next), delay)
     return () => clearTimeout(t)
   }, [countdown])
+
+  function toggleSound() {
+    setSoundMuted((m) => {
+      const next = !m
+      save(STORAGE_KEYS.soundMuted, next)
+      return next
+    })
+  }
 
   async function handleShare() {
     const hours = Math.floor(totalWasted / 60)
@@ -182,6 +223,7 @@ export default function ProcrastinationButton() {
   const hours = Math.floor(totalWasted / 60)
   const mins = totalWasted % 60
   const wastedDisplay = hours > 0 ? `${hours}h ${mins}m` : `${totalWasted}m`
+  const productivity = Math.max(0, PRODUCTIVITY_START - totalClicks * PRODUCTIVITY_DROP_PER_CLICK)
 
   return (
     <div className={`min-h-screen flex flex-col items-center justify-center p-6 text-center relative overflow-hidden ${shake ? 'animate-shake' : ''} ${discoMode ? '' : 'bg-gradient-to-b from-slate-900 to-slate-800'}`}>
@@ -194,7 +236,15 @@ export default function ProcrastinationButton() {
         />
       )}
       <div className="relative z-10 flex flex-col items-center justify-center text-center w-full">
-      <div className="absolute top-4 right-4 flex items-center gap-3">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleSound}
+          className={`text-sm transition-all px-2 py-1 rounded ${soundMuted ? 'text-slate-600' : 'text-slate-400 hover:text-amber-400'}`}
+          title={soundMuted ? 'Unmute click sound' : 'Mute click sound'}
+        >
+          {soundMuted ? '🔇' : '🔊'}
+        </button>
         <button
           type="button"
           onClick={() => setDiscoMode((d) => !d)}
@@ -240,7 +290,7 @@ export default function ProcrastinationButton() {
         onClick={handleClick}
         className={`w-72 h-72 rounded-full active:scale-95 transition-all duration-150 border-4 text-white font-bold text-xl px-4 py-2 select-none cursor-pointer hover:scale-105 ${buttonRunsAway ? 'animate-float' : ''} ${discoMode ? 'bg-gradient-to-r from-fuchsia-500 via-yellow-400 to-cyan-400 border-white/50 animate-disco-glow hover:opacity-95' : 'bg-red-600 hover:bg-red-500 shadow-2xl shadow-red-900/50 border-red-400/30'}`}
       >
-        I'll start in {minutes} minutes
+        {buttonTalkBack || `I'll start in ${minutes} minutes`}
       </button>
       {buttonRunsAway && (
         <p className="mt-2 text-slate-500 text-xs">Even the button is trying to get away.</p>
@@ -272,6 +322,20 @@ export default function ProcrastinationButton() {
         </p>
       )}
 
+      <div className="mt-8 w-64">
+        <div className="flex justify-between text-xs text-slate-500 mb-1">
+          <span>Productivity</span>
+          <span>{productivity}%</span>
+        </div>
+        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-red-600 to-amber-500 rounded-full transition-all duration-300"
+            style={{ width: `${productivity}%` }}
+          />
+        </div>
+        <p className="text-slate-500 text-xs mt-1 italic">It's not a bug. It's a feature.</p>
+      </div>
+
       <div className="mt-12 flex gap-8 text-slate-400 text-sm">
         <div>
           <span className="block text-slate-500 text-xs uppercase tracking-wider">Total wasted time</span>
@@ -290,6 +354,19 @@ export default function ProcrastinationButton() {
       >
         {shareCopied ? '✓ Copied to clipboard!' : '📤 Share my shame'}
       </button>
+
+      {showNotification && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 bg-slate-800 border border-slate-600 rounded-xl shadow-xl animate-slide-up">
+          <span className="text-slate-300 text-sm">Your to-do list would like to say something.</span>
+          <button
+            type="button"
+            onClick={() => setShowNotification(false)}
+            className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 rounded text-slate-200 text-sm"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {showAchievements && (
         <div className="absolute inset-0 bg-slate-900/95 flex items-center justify-center p-6 z-10">
