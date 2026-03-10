@@ -16,6 +16,7 @@ const COMPLETE_MESSAGES = [
 ]
 
 const STORAGE_FOCUS_SESSIONS = 'funapp_focus_sessions_completed'
+const STORAGE_TOTAL_FOCUS_MINUTES = 'funapp_total_focus_minutes'
 
 function loadFocusSessions() {
   try {
@@ -32,6 +33,21 @@ function saveFocusSessions(n) {
   } catch (_) {}
 }
 
+function loadTotalFocusMinutes() {
+  try {
+    const v = localStorage.getItem(STORAGE_TOTAL_FOCUS_MINUTES)
+    return v != null ? Number(v) : 0
+  } catch {
+    return 0
+  }
+}
+
+function saveTotalFocusMinutes(n) {
+  try {
+    localStorage.setItem(STORAGE_TOTAL_FOCUS_MINUTES, String(n))
+  } catch (_) {}
+}
+
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
@@ -44,6 +60,7 @@ export default function FocusMode({ onBack }) {
   const [isRunning, setIsRunning] = useState(false)
   const [completed, setCompleted] = useState(false)
   const [sessionsCompleted, setSessionsCompleted] = useState(loadFocusSessions)
+  const [taskLabel, setTaskLabel] = useState('')
   const intervalRef = useRef(null)
 
   const totalSeconds = durationMinutes * 60
@@ -57,6 +74,8 @@ export default function FocusMode({ onBack }) {
       const next = sessionsCompleted + 1
       setSessionsCompleted(next)
       saveFocusSessions(next)
+      const totalFocus = loadTotalFocusMinutes() + durationMinutes
+      saveTotalFocusMinutes(totalFocus)
       return
     }
     intervalRef.current = setInterval(() => {
@@ -100,6 +119,17 @@ export default function FocusMode({ onBack }) {
 
       {!completed ? (
         <>
+          <div className="w-full max-w-xs mb-4">
+            <label className="block text-slate-500 text-xs mb-1 text-left">What are you focusing on? (optional)</label>
+            <input
+              type="text"
+              value={taskLabel}
+              onChange={(e) => setTaskLabel(e.target.value)}
+              placeholder="e.g. Finish the report"
+              disabled={!canChangeDuration}
+              className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-50"
+            />
+          </div>
           <div className="flex gap-2 mb-6">
             {DURATIONS.map((d) => (
               <button
@@ -145,8 +175,15 @@ export default function FocusMode({ onBack }) {
                 strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress)}`}
               />
             </svg>
-            <div className="relative z-10 text-5xl font-mono font-bold tabular-nums text-slate-200">
-              {secondsLeft != null ? formatTime(secondsLeft) : formatTime(totalSeconds)}
+            <div className="relative z-10 text-center">
+              <span className="block text-5xl font-mono font-bold tabular-nums text-slate-200">
+                {secondsLeft != null ? formatTime(secondsLeft) : formatTime(totalSeconds)}
+              </span>
+              {taskLabel.trim() && (
+                <p className="mt-2 text-sm text-slate-400 max-w-[200px] truncate" title={taskLabel}>
+                  {taskLabel}
+                </p>
+              )}
             </div>
           </div>
 
