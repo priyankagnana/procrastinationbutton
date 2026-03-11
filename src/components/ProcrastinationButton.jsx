@@ -102,7 +102,7 @@ function save(key, value) {
 }
 
 
-export default function ProcrastinationButton() {
+export default function ProcrastinationButton({ onNavigateToFocus }) {
   const [minutes, setMinutes] = useState(BASE_MINUTES)
   const [message, setMessage] = useState(null)
   const [totalWasted, setTotalWasted] = useState(() => load(STORAGE_KEYS.totalWasted, 0))
@@ -313,6 +313,15 @@ export default function ProcrastinationButton() {
           <p className="mt-4 text-xl text-amber-300 font-medium">
             {countdown === 'psych' ? "Just kidding. Have another 5 minutes." : 'Starting in...'}
           </p>
+          {onNavigateToFocus && (
+            <button
+              type="button"
+              onClick={onNavigateToFocus}
+              className="mt-6 px-4 py-2 rounded-full bg-emerald-600/80 hover:bg-emerald-500 text-emerald-100 text-sm font-medium border border-emerald-500/50 transition-colors"
+            >
+              {countdown === 'psych' ? 'Fine, take me to Focus Mode' : 'Skip to Focus Mode'}
+            </button>
+          )}
         </div>
       )}
 
