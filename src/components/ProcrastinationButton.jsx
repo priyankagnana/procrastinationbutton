@@ -62,6 +62,7 @@ const STORAGE_KEYS = {
   totalWasted: 'procrastination_total_wasted_minutes',
   lifetimeStreak: 'procrastination_lifetime_streak',
   soundMuted: 'procrastination_sound_muted',
+  avoidList: 'procrastination_avoid_list',
 }
 
 const PRODUCTIVITY_START = 100
@@ -89,6 +90,11 @@ function load(key, fallback) {
   try {
     const v = localStorage.getItem(key)
     if (key === STORAGE_KEYS.soundMuted) return v == null ? fallback : v === 'true'
+    if (key === STORAGE_KEYS.avoidList) {
+      if (v == null) return fallback
+      const parsed = JSON.parse(v)
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === 'string' && x.trim()) : fallback
+    }
     return v != null ? Number(v) : fallback
   } catch {
     return fallback
@@ -97,6 +103,10 @@ function load(key, fallback) {
 
 function save(key, value) {
   try {
+    if (key === STORAGE_KEYS.avoidList) {
+      localStorage.setItem(key, JSON.stringify(value))
+      return
+    }
     localStorage.setItem(key, String(value))
   } catch (_) {}
 }
@@ -117,6 +127,8 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
   const [soundMuted, setSoundMuted] = useState(() => load(STORAGE_KEYS.soundMuted, false))
   const [buttonTalkBack, setButtonTalkBack] = useState(null)
   const [showNotification, setShowNotification] = useState(false)
+  const [avoidList, setAvoidList] = useState(() => load(STORAGE_KEYS.avoidList, []))
+  const [avoidInput, setAvoidInput] = useState('')
   const tipIndex = useRef(0)
   const confettiKey = useRef(0)
   const confettiParticles = useRef([])
@@ -152,12 +164,29 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
     }
   }, [currentStreak, lifetimeStreak])
 
+  useEffect(() => {
+    save(STORAGE_KEYS.avoidList, avoidList)
+  }, [avoidList])
+
+  function addAvoidItem() {
+    const trimmed = avoidInput.trim()
+    if (!trimmed || avoidList.includes(trimmed)) return
+    setAvoidList((prev) => [...prev, trimmed])
+    setAvoidInput('')
+  }
+
+  function removeAvoidItem(item) {
+    setAvoidList((prev) => prev.filter((x) => x !== item))
+  }
+
   function handleClick() {
     if (!soundMuted) playClickSound()
     setMinutes((m) => m + BASE_MINUTES)
     const nextStreak = currentStreak + 1
     const milestoneMsg = MILESTONE_MESSAGES[nextStreak]
-    setMessage(milestoneMsg || MESSAGES[Math.floor(Math.random() * MESSAGES.length)])
+    const showAvoid = avoidList.length > 0 && Math.random() < 0.4
+    const avoidMsg = showAvoid ? `You're avoiding: ${avoidList[Math.floor(Math.random() * avoidList.length)]}` : null
+    setMessage(milestoneMsg || avoidMsg || MESSAGES[Math.floor(Math.random() * MESSAGES.length)])
     setTotalWasted((w) => w + BASE_MINUTES)
     setCurrentStreak((s) => s + 1)
     setShake(true)
@@ -343,6 +372,50 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
           />
         </div>
         <p className="text-slate-500 text-xs mt-1 italic">It's not a bug. It's a feature.</p>
+      </div>
+
+      <div className="mt-8 w-full max-w-sm">
+        <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">What I'm not doing right now</p>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={avoidInput}
+            onChange={(e) => setAvoidInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addAvoidItem()}
+            placeholder="e.g. taxes, laundry"
+            className="flex-1 px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+          />
+          <button
+            type="button"
+            onClick={addAvoidItem}
+            className="px-3 py-2 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300 text-sm font-medium transition-colors shrink-0"
+          >
+            Add
+          </button>
+        </div>
+        {avoidList.length > 0 && (
+          <ul className="space-y-1">
+            {avoidList.map((item) => (
+              <li
+                key={item}
+                className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-700/80 border border-slate-600/80 text-slate-300 text-sm group"
+              >
+                <span className="truncate">{item}</span>
+                <button
+                  type="button"
+                  onClick={() => removeAvoidItem(item)}
+                  className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-600 transition-colors"
+                  title="Remove"
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {avoidList.length > 0 && (
+          <p className="text-slate-500 text-xs mt-1 italic">We might remind you when you click the button.</p>
+        )}
       </div>
 
       <div className="mt-12 flex gap-8 text-slate-400 text-sm">
