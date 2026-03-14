@@ -42,6 +42,9 @@ const TIPS = [
   "Tip: The best time to start was 20 minutes ago. The second best is never.",
   "Tip: Break tasks into smaller steps. Then procrastinate on each step.",
   "Tip: Research shows procrastinators are creative. You're basically Picasso.",
+  "Tip: Your 'avoid' list is a museum of things you could do. Admission is free.",
+  "Tip: Focus Mode exists. The button pretends not to notice.",
+  "Tip: One tab open is a commitment. Twelve is a lifestyle.",
 ]
 
 const RANKS = [
