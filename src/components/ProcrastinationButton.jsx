@@ -171,6 +171,16 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
     save(STORAGE_KEYS.avoidList, avoidList)
   }, [avoidList])
 
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key !== 'Escape') return
+      setShowAchievements(false)
+      setShowNotification(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   function addAvoidItem() {
     const trimmed = avoidInput.trim()
     if (!trimmed || avoidList.includes(trimmed)) return
