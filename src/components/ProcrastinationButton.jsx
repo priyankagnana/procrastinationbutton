@@ -34,6 +34,7 @@ const ACHIEVEMENTS = [
   { id: 'twentyfive', label: 'Quarter century of shame', minClicks: 25 },
   { id: 'fifty', label: 'Fifty clicks, zero tasks', minClicks: 50 },
   { id: 'century', label: 'Century of regret', minClicks: 100 },
+  { id: 'avoidlist', label: 'List of shame (3+ avoided tasks)', minAvoidItems: 3 },
 ]
 
 const TIPS = [
@@ -150,10 +151,11 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
     for (const a of ACHIEVEMENTS) {
       const byClicks = a.minClicks != null && totalClicks >= a.minClicks
       const byWasted = a.minWasted != null && totalWasted >= a.minWasted
-      if (byClicks || byWasted) set.add(a.id)
+      const byAvoid = a.minAvoidItems != null && avoidList.length >= a.minAvoidItems
+      if (byClicks || byWasted || byAvoid) set.add(a.id)
     }
     return set
-  }, [totalWasted])
+  }, [totalWasted, avoidList.length])
 
   useEffect(() => {
     save(STORAGE_KEYS.totalWasted, totalWasted)
