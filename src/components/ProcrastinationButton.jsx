@@ -133,6 +133,7 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
   const [showNotification, setShowNotification] = useState(false)
   const [avoidList, setAvoidList] = useState(() => load(STORAGE_KEYS.avoidList, []))
   const [avoidInput, setAvoidInput] = useState('')
+  const [avoidSectionOpen, setAvoidSectionOpen] = useState(true)
   const tipIndex = useRef(0)
   const confettiKey = useRef(0)
   const confettiParticles = useRef([])
@@ -390,46 +391,57 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
       </div>
 
       <div className="mt-8 w-full max-w-sm">
-        <p className="text-slate-500 text-xs uppercase tracking-wider mb-2">What I'm not doing right now</p>
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            value={avoidInput}
-            onChange={(e) => setAvoidInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addAvoidItem()}
-            placeholder="e.g. taxes, laundry"
-            className="flex-1 px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
-          />
-          <button
-            type="button"
-            onClick={addAvoidItem}
-            className="px-3 py-2 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300 text-sm font-medium transition-colors shrink-0"
-          >
-            Add
-          </button>
-        </div>
-        {avoidList.length > 0 && (
-          <ul className="space-y-1">
-            {avoidList.map((item) => (
-              <li
-                key={item}
-                className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-700/80 border border-slate-600/80 text-slate-300 text-sm group"
+        <button
+          type="button"
+          onClick={() => setAvoidSectionOpen((o) => !o)}
+          className="w-full flex items-center justify-between gap-2 text-left text-slate-500 text-xs uppercase tracking-wider mb-2 hover:text-slate-400 transition-colors"
+        >
+          <span>What I'm not doing right now {avoidList.length > 0 && `(${avoidList.length})`}</span>
+          <span className="text-slate-400 normal-case">{avoidSectionOpen ? '▼' : '▶'}</span>
+        </button>
+        {avoidSectionOpen && (
+          <>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={avoidInput}
+                onChange={(e) => setAvoidInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addAvoidItem()}
+                placeholder="e.g. taxes, laundry"
+                className="flex-1 px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+              />
+              <button
+                type="button"
+                onClick={addAvoidItem}
+                className="px-3 py-2 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300 text-sm font-medium transition-colors shrink-0"
               >
-                <span className="truncate">{item}</span>
-                <button
-                  type="button"
-                  onClick={() => removeAvoidItem(item)}
-                  className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-600 transition-colors"
-                  title="Remove"
-                >
-                  ×
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {avoidList.length > 0 && (
-          <p className="text-slate-500 text-xs mt-1 italic">We might remind you when you click the button.</p>
+                Add
+              </button>
+            </div>
+            {avoidList.length > 0 && (
+              <ul className="space-y-1">
+                {avoidList.map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-700/80 border border-slate-600/80 text-slate-300 text-sm group"
+                  >
+                    <span className="truncate">{item}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAvoidItem(item)}
+                      className="shrink-0 w-6 h-6 flex items-center justify-center rounded text-slate-500 hover:text-red-400 hover:bg-slate-600 transition-colors"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {avoidList.length > 0 && (
+              <p className="text-slate-500 text-xs mt-1 italic">We might remind you when you click the button.</p>
+            )}
+          </>
         )}
       </div>
 
