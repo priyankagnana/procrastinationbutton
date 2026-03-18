@@ -48,6 +48,50 @@ function saveTotalFocusMinutes(n) {
   } catch (_) {}
 }
 
+const STORAGE_FOCUS_COMPLETE_SOUND_MUTED = 'funapp_focus_complete_sound_muted'
+
+function loadCompleteSoundMuted() {
+  try {
+    const v = localStorage.getItem(STORAGE_FOCUS_COMPLETE_SOUND_MUTED)
+    return v === 'true'
+  } catch {
+    return false
+  }
+}
+
+function saveCompleteSoundMuted(muted) {
+  try {
+    localStorage.setItem(STORAGE_FOCUS_COMPLETE_SOUND_MUTED, String(muted))
+  } catch (_) {}
+}
+
+function playFocusCompleteSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(523.25, ctx.currentTime)
+    gain.gain.setValueAtTime(0.1, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.35)
+    const osc2 = ctx.createOscillator()
+    const g2 = ctx.createGain()
+    osc2.connect(g2)
+    g2.connect(ctx.destination)
+    osc2.type = 'sine'
+    osc2.frequency.setValueAtTime(659.25, ctx.currentTime + 0.12)
+    g2.gain.setValueAtTime(0, ctx.currentTime + 0.12)
+    g2.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.14)
+    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45)
+    osc2.start(ctx.currentTime + 0.12)
+    osc2.stop(ctx.currentTime + 0.45)
+  } catch (_) {}
+}
+
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
@@ -61,7 +105,9 @@ export default function FocusMode({ onBack }) {
   const [completed, setCompleted] = useState(false)
   const [sessionsCompleted, setSessionsCompleted] = useState(loadFocusSessions)
   const [taskLabel, setTaskLabel] = useState('')
+  const [completeSoundMuted, setCompleteSoundMuted] = useState(loadCompleteSoundMuted)
   const intervalRef = useRef(null)
+  const playedCompleteSoundRef = useRef(false)
 
   const totalSeconds = durationMinutes * 60
   const progress = secondsLeft != null ? 1 - secondsLeft / totalSeconds : 0
@@ -71,6 +117,10 @@ export default function FocusMode({ onBack }) {
     if (secondsLeft <= 0) {
       setIsRunning(false)
       setCompleted(true)
+      if (!playedCompleteSoundRef.current && !completeSoundMuted) {
+        playedCompleteSoundRef.current = true
+        playFocusCompleteSound()
+      }
       const next = sessionsCompleted + 1
       setSessionsCompleted(next)
       saveFocusSessions(next)
@@ -85,6 +135,7 @@ export default function FocusMode({ onBack }) {
   }, [isRunning, secondsLeft, totalSeconds, sessionsCompleted])
 
   function start() {
+    playedCompleteSoundRef.current = false
     setSecondsLeft(durationMinutes * 60)
     setIsRunning(true)
     setCompleted(false)
@@ -95,9 +146,18 @@ export default function FocusMode({ onBack }) {
   }
 
   function reset() {
+    playedCompleteSoundRef.current = false
     setIsRunning(false)
     setSecondsLeft(null)
     setCompleted(false)
+  }
+
+  function toggleCompleteSound() {
+    setCompleteSoundMuted((m) => {
+      const next = !m
+      saveCompleteSoundMuted(next)
+      return next
+    })
   }
 
   const canChangeDuration = !isRunning && secondsLeft == null
@@ -110,6 +170,14 @@ export default function FocusMode({ onBack }) {
         className="absolute top-4 left-4 text-slate-500 hover:text-amber-400 text-sm transition-colors flex items-center gap-1"
       >
         ← Back to procrastinating
+      </button>
+      <button
+        type="button"
+        onClick={toggleCompleteSound}
+        className={`absolute top-4 right-4 text-sm transition-all px-2 py-1 rounded ${completeSoundMuted ? 'text-slate-600' : 'text-slate-400 hover:text-amber-400'}`}
+        title={completeSoundMuted ? 'Unmute completion chime' : 'Mute completion chime'}
+      >
+        {completeSoundMuted ? '🔕' : '🔔'}
       </button>
 
       <h1 className="text-2xl font-bold text-slate-300 mb-1">Focus Mode</h1>
