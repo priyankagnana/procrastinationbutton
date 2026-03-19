@@ -106,6 +106,7 @@ export default function FocusMode({ onBack }) {
   const [sessionsCompleted, setSessionsCompleted] = useState(loadFocusSessions)
   const [taskLabel, setTaskLabel] = useState('')
   const [completeSoundMuted, setCompleteSoundMuted] = useState(loadCompleteSoundMuted)
+  const [customMinutesDraft, setCustomMinutesDraft] = useState('')
   const intervalRef = useRef(null)
   const playedCompleteSoundRef = useRef(false)
 
@@ -160,6 +161,14 @@ export default function FocusMode({ onBack }) {
     })
   }
 
+  function applyCustomMinutes() {
+    const n = Math.round(Number(customMinutesDraft))
+    if (Number.isNaN(n)) return
+    const clamped = Math.min(120, Math.max(2, n))
+    setDurationMinutes(clamped)
+    setCustomMinutesDraft(String(clamped))
+  }
+
   const canChangeDuration = !isRunning && secondsLeft == null
 
   return (
@@ -198,12 +207,16 @@ export default function FocusMode({ onBack }) {
               className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-50"
             />
           </div>
-          <div className="flex gap-2 mb-6">
+          <div className="flex flex-wrap gap-2 justify-center mb-3">
             {DURATIONS.map((d) => (
               <button
                 key={d.minutes}
                 type="button"
-                onClick={() => canChangeDuration && setDurationMinutes(d.minutes)}
+                onClick={() => {
+                  if (!canChangeDuration) return
+                  setDurationMinutes(d.minutes)
+                  setCustomMinutesDraft('')
+                }}
                 disabled={!canChangeDuration}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   durationMinutes === d.minutes
@@ -216,6 +229,31 @@ export default function FocusMode({ onBack }) {
                 {d.label}
               </button>
             ))}
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-6 max-w-xs mx-auto">
+            <label htmlFor="focus-custom-min" className="text-slate-500 text-xs shrink-0">
+              Or custom (2–120 min)
+            </label>
+            <input
+              id="focus-custom-min"
+              type="number"
+              min={2}
+              max={120}
+              value={customMinutesDraft}
+              onChange={(e) => setCustomMinutesDraft(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && applyCustomMinutes()}
+              disabled={!canChangeDuration}
+              placeholder={String(durationMinutes)}
+              className="w-16 px-2 py-1.5 rounded-lg bg-slate-700 border border-slate-600 text-slate-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-amber-500/50 disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={applyCustomMinutes}
+              disabled={!canChangeDuration}
+              className="px-3 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-slate-300 text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              Set
+            </button>
           </div>
 
           <div className="relative w-56 h-56 flex items-center justify-center">
