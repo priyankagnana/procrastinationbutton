@@ -34,6 +34,7 @@ export default function Stats({ onBack }) {
   const [totalWasted, setTotalWasted] = useState(0)
   const [sessions, setSessions] = useState(0)
   const [totalFocus, setTotalFocus] = useState(0)
+  const [statsCopied, setStatsCopied] = useState(false)
 
   useEffect(() => {
     const sync = () => {
@@ -48,6 +49,15 @@ export default function Stats({ onBack }) {
 
   const ratio = totalWasted > 0 ? totalFocus / totalWasted : (totalFocus > 0 ? 1 : 0)
   const redemption = REDEMPTION_MESSAGES.find((r) => ratio >= r.minRatio && ratio < r.maxRatio) || REDEMPTION_MESSAGES[0]
+
+  async function copyStatsSummary() {
+    const text = `Procrastination vs Focus — Wasted: ${formatDuration(totalWasted)} | Focused: ${formatDuration(totalFocus)} | Sessions: ${sessions} | Ratio: ${(ratio * 100).toFixed(0)}% | ${redemption.emoji} ${redemption.msg}`
+    try {
+      await navigator.clipboard.writeText(text)
+      setStatsCopied(true)
+      setTimeout(() => setStatsCopied(false), 2000)
+    } catch (_) {}
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 to-slate-800 text-center">
@@ -86,6 +96,13 @@ export default function Stats({ onBack }) {
         <p className="text-slate-500 text-xs mt-2">
           Focus vs procrastination ratio: <span className="text-amber-400 font-mono">{(ratio * 100).toFixed(0)}%</span>
         </p>
+        <button
+          type="button"
+          onClick={copyStatsSummary}
+          className="mt-4 w-full py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors border border-slate-600"
+        >
+          {statsCopied ? '✓ Copied summary!' : '📋 Copy stats summary'}
+        </button>
       </div>
     </div>
   )
