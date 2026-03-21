@@ -48,6 +48,33 @@ function saveTotalFocusMinutes(n) {
   } catch (_) {}
 }
 
+const STORAGE_FOCUS_STREAK = 'funapp_focus_streak_count'
+const STORAGE_FOCUS_STREAK_LAST = 'funapp_focus_streak_last_date'
+
+function localDayStr(d = new Date()) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function updateFocusDayStreak() {
+  const todayStr = localDayStr()
+  try {
+    const last = localStorage.getItem(STORAGE_FOCUS_STREAK_LAST)
+    let streak = Number(localStorage.getItem(STORAGE_FOCUS_STREAK) || '0')
+    if (last === todayStr) return
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yStr = localDayStr(yesterday)
+    if (!last) streak = 1
+    else if (last === yStr) streak = streak + 1
+    else streak = 1
+    localStorage.setItem(STORAGE_FOCUS_STREAK_LAST, todayStr)
+    localStorage.setItem(STORAGE_FOCUS_STREAK, String(streak))
+  } catch (_) {}
+}
+
 const STORAGE_FOCUS_COMPLETE_SOUND_MUTED = 'funapp_focus_complete_sound_muted'
 
 function loadCompleteSoundMuted() {
@@ -127,6 +154,7 @@ export default function FocusMode({ onBack }) {
       saveFocusSessions(next)
       const totalFocus = loadTotalFocusMinutes() + durationMinutes
       saveTotalFocusMinutes(totalFocus)
+      updateFocusDayStreak()
       return
     }
     intervalRef.current = setInterval(() => {

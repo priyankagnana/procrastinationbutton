@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   totalWasted: 'procrastination_total_wasted_minutes',
   focusSessions: 'funapp_focus_sessions_completed',
   totalFocusMinutes: 'funapp_total_focus_minutes',
+  focusStreak: 'funapp_focus_streak_count',
 }
 
 function load(key, fallback = 0) {
@@ -35,12 +36,14 @@ export default function Stats({ onBack }) {
   const [sessions, setSessions] = useState(0)
   const [totalFocus, setTotalFocus] = useState(0)
   const [statsCopied, setStatsCopied] = useState(false)
+  const [focusStreak, setFocusStreak] = useState(0)
 
   useEffect(() => {
     const sync = () => {
       setTotalWasted(load(STORAGE_KEYS.totalWasted))
       setSessions(load(STORAGE_KEYS.focusSessions))
       setTotalFocus(load(STORAGE_KEYS.totalFocusMinutes))
+      setFocusStreak(load(STORAGE_KEYS.focusStreak))
     }
     sync()
     const id = setInterval(sync, 2000)
@@ -87,6 +90,16 @@ export default function Stats({ onBack }) {
           <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">Time focused</p>
           <p className="text-2xl font-mono font-bold text-emerald-400">{formatDuration(totalFocus)}</p>
           <p className="text-slate-500 text-xs mt-1">Minutes you showed up.</p>
+        </div>
+      </div>
+
+      <div className="w-full max-w-lg mb-6 px-1">
+        <div className="bg-slate-800/80 border border-slate-600 rounded-xl p-4 flex items-center justify-between gap-4 text-left">
+          <div>
+            <p className="text-slate-500 text-xs uppercase tracking-wider">Focus day streak</p>
+            <p className="text-slate-400 text-sm mt-0.5">Consecutive calendar days you finished at least one session.</p>
+          </div>
+          <p className="text-3xl font-mono font-bold text-emerald-400 shrink-0">{focusStreak}</p>
         </div>
       </div>
 
