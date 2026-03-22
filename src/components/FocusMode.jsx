@@ -125,6 +125,8 @@ function formatTime(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+const DEFAULT_DOCUMENT_TITLE = 'Procrastination Button — delay with style'
+
 export default function FocusMode({ onBack }) {
   const [durationMinutes, setDurationMinutes] = useState(5)
   const [secondsLeft, setSecondsLeft] = useState(null)
@@ -198,6 +200,20 @@ export default function FocusMode({ onBack }) {
   }
 
   const canChangeDuration = !isRunning && secondsLeft == null
+
+  useEffect(() => {
+    if (completed) document.title = 'Done · Focus'
+    else if (secondsLeft != null) {
+      const label = isRunning ? 'Focus' : 'Paused'
+      document.title = `${formatTime(secondsLeft)} · ${label}`
+    } else document.title = 'Focus mode · Procrastination Button'
+  }, [secondsLeft, completed, isRunning])
+
+  useEffect(() => {
+    return () => {
+      document.title = DEFAULT_DOCUMENT_TITLE
+    }
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 to-slate-800 text-center">
