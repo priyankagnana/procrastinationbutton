@@ -67,6 +67,39 @@ const STORAGE_KEYS = {
   lifetimeStreak: 'procrastination_lifetime_streak',
   soundMuted: 'procrastination_sound_muted',
   avoidList: 'procrastination_avoid_list',
+  dailyClickDate: 'procrastination_daily_click_date',
+  dailyClickCount: 'procrastination_daily_click_count',
+}
+
+function localDayStr(d = new Date()) {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function loadClicksToday() {
+  const today = localDayStr()
+  try {
+    const d = localStorage.getItem(STORAGE_KEYS.dailyClickDate)
+    const c = Number(localStorage.getItem(STORAGE_KEYS.dailyClickCount))
+    if (d === today && !Number.isNaN(c)) return c
+  } catch (_) {}
+  return 0
+}
+
+function bumpClicksToday() {
+  const today = localDayStr()
+  try {
+    const d = localStorage.getItem(STORAGE_KEYS.dailyClickDate)
+    const prev = d === today ? Number(localStorage.getItem(STORAGE_KEYS.dailyClickCount) || '0') : 0
+    const next = prev + 1
+    localStorage.setItem(STORAGE_KEYS.dailyClickDate, today)
+    localStorage.setItem(STORAGE_KEYS.dailyClickCount, String(next))
+    return next
+  } catch (_) {
+    return 1
+  }
 }
 
 const PRODUCTIVITY_START = 100
@@ -134,6 +167,7 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
   const [avoidList, setAvoidList] = useState(() => load(STORAGE_KEYS.avoidList, []))
   const [avoidInput, setAvoidInput] = useState('')
   const [avoidSectionOpen, setAvoidSectionOpen] = useState(true)
+  const [clicksToday, setClicksToday] = useState(loadClicksToday)
   const tipIndex = useRef(0)
   const confettiKey = useRef(0)
   const confettiParticles = useRef([])
@@ -184,6 +218,11 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  useEffect(() => {
+    const id = setInterval(() => setClicksToday(loadClicksToday), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
   function addAvoidItem() {
     const trimmed = avoidInput.trim()
     if (!trimmed || avoidList.includes(trimmed)) return
@@ -197,6 +236,7 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
 
   function handleClick() {
     if (!soundMuted) playClickSound()
+    setClicksToday(bumpClicksToday())
     setMinutes((m) => m + BASE_MINUTES)
     const nextStreak = currentStreak + 1
     const milestoneMsg = MILESTONE_MESSAGES[nextStreak]
@@ -311,6 +351,10 @@ export default function ProcrastinationButton({ onNavigateToFocus }) {
       <p className="text-slate-500 text-sm mb-1">Click. Regret. Repeat.</p>
       <p className="text-slate-500 text-sm mb-6">
         <span className="text-amber-400/90">{currentRank.emoji}</span> {currentRank.title}
+      </p>
+      <p className="text-slate-500 text-sm mb-6 -mt-4">
+        Clicks today: <span className="font-mono text-slate-400">{clicksToday}</span>
+        <span className="text-slate-600 text-xs block mt-0.5">Resets at midnight (your local time).</span>
       </p>
 
       {showConfetti && confettiParticles.current.length > 0 && (
